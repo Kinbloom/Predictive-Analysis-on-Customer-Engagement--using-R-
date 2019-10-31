@@ -5,6 +5,54 @@ Research Question
 
 A Kenyan entrepreneur has created an online cryptography course and would want to advertise it on her blog. She currently targets audiences originating from various countries. In the past, she ran ads to advertise a related course on the same blog and collected data in the process. She would now like to employ your services as a Data Science Consultant to create a solution that would allow her to determine whether ads targeted to audiences of certain characteristics i.e. city, male country, ad topic, etc. would click on her ads. Ceate a prediction model that more accurately predicts whether a user will click an Ad.
 
+
+```R
+#Import libraries
+library(tidyverse)
+library(magrittr)
+library(corrplot)
+library(caret)
+library(skimr)
+options(warn = -1)
+```
+
+    Registered S3 methods overwritten by 'ggplot2':
+      method         from 
+      [.quosures     rlang
+      c.quosures     rlang
+      print.quosures rlang
+    Registered S3 method overwritten by 'rvest':
+      method            from
+      read_xml.response xml2
+    -- Attaching packages --------------------------------------- tidyverse 1.2.1 --
+    v ggplot2 3.1.1       v purrr   0.3.2  
+    v tibble  2.1.1       v dplyr   0.8.0.1
+    v tidyr   0.8.3       v stringr 1.4.0  
+    v readr   1.3.1       v forcats 0.4.0  
+    -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+    x dplyr::filter() masks stats::filter()
+    x dplyr::lag()    masks stats::lag()
+    
+    Attaching package: 'magrittr'
+    
+    The following object is masked from 'package:purrr':
+    
+        set_names
+    
+    The following object is masked from 'package:tidyr':
+    
+        extract
+    
+    
+
+
+    Error in library(corrplot): there is no package called 'corrplot'
+    Traceback:
+    
+
+    1. library(corrplot)
+
+
 ## Load the Dataset
 
 
@@ -90,6 +138,24 @@ duplicated_rows
 
 No duplicated values in the advertising dataset
 
+### What is the shape of the dataset?
+
+
+```R
+#Checking for the number of columns and rows in the dataframe
+dim(advertising)
+```
+
+
+<ol class=list-inline>
+	<li>1000</li>
+	<li>10</li>
+</ol>
+
+
+
+There are 1000 rows and 10 columns.
+
 ### Check for Outliers
 
 
@@ -100,7 +166,7 @@ boxplot(advertising)
 ```
 
 
-![png](output_13_0.png)
+![png](output_17_0.png)
 
 
 The boxplot indicates the 3rd column contains outliers beyond the threshold. The Area.Income column.
@@ -717,7 +783,7 @@ boxplot(advertising$Daily.Time.Spent.on.Site)
 ```
 
 
-![png](output_39_0.png)
+![png](output_43_0.png)
 
 
 
@@ -728,7 +794,7 @@ boxplot(advertising$Age)
 ```
 
 
-![png](output_40_0.png)
+![png](output_44_0.png)
 
 
 
@@ -739,7 +805,7 @@ boxplot(advertising$Area.Income)
 ```
 
 
-![png](output_41_0.png)
+![png](output_45_0.png)
 
 
 
@@ -750,7 +816,7 @@ boxplot(advertising$Daily.Internet.Usage)
 ```
 
 
-![png](output_42_0.png)
+![png](output_46_0.png)
 
 
 ### Bar Graphs
@@ -767,7 +833,7 @@ barplot(DailyTime_frequency)
 ```
 
 
-![png](output_44_0.png)
+![png](output_48_0.png)
 
 
 
@@ -782,7 +848,7 @@ barplot(age_frequency)
 ```
 
 
-![png](output_45_0.png)
+![png](output_49_0.png)
 
 
 
@@ -797,7 +863,7 @@ barplot(AreaIncome_frequency)
 ```
 
 
-![png](output_46_0.png)
+![png](output_50_0.png)
 
 
 
@@ -813,7 +879,7 @@ barplot(DailyInternet_frequency)
 ```
 
 
-![png](output_47_0.png)
+![png](output_51_0.png)
 
 
 ### Histogram
@@ -826,7 +892,7 @@ hist(advertising$Daily.Time.Spent.on.Site)
 ```
 
 
-![png](output_49_0.png)
+![png](output_53_0.png)
 
 
 
@@ -837,7 +903,7 @@ hist(advertising$Age)
 ```
 
 
-![png](output_50_0.png)
+![png](output_54_0.png)
 
 
 
@@ -848,7 +914,7 @@ hist(advertising$Area.Income)
 ```
 
 
-![png](output_51_0.png)
+![png](output_55_0.png)
 
 
 
@@ -859,7 +925,7 @@ hist(advertising$Daily.Internet.Usage)
 ```
 
 
-![png](output_52_0.png)
+![png](output_56_0.png)
 
 
 ### Bivariate and Multivariate Graphical Data Analysis
@@ -917,44 +983,327 @@ plot(DailyTime, DailyInternet, xlab="Daily Time Spent on Site", ylab="Daily Inte
 ```
 
 
-![png](output_56_0.png)
+![png](output_60_0.png)
 
 
-
+### Data Preparation
 
 
 ```R
+#Drop columns that won't be included in the modelling stage.
 
+advertising <- advertising
+ 
+advertising = select (advertising,-c(Ad.Topic.Line,City,Country,Timestamp))
 ```
 
 
 ```R
+head(advertising,10)
+```
 
+
+<table>
+<thead><tr><th scope=col>Daily.Time.Spent.on.Site</th><th scope=col>Age</th><th scope=col>Area.Income</th><th scope=col>Daily.Internet.Usage</th><th scope=col>Male</th><th scope=col>Clicked.on.Ad</th></tr></thead>
+<tbody>
+	<tr><td>68.95   </td><td>35      </td><td>61833.90</td><td>256.09  </td><td>0       </td><td>0       </td></tr>
+	<tr><td>80.23   </td><td>31      </td><td>68441.85</td><td>193.77  </td><td>1       </td><td>0       </td></tr>
+	<tr><td>69.47   </td><td>26      </td><td>59785.94</td><td>236.50  </td><td>0       </td><td>0       </td></tr>
+	<tr><td>74.15   </td><td>29      </td><td>54806.18</td><td>245.89  </td><td>1       </td><td>0       </td></tr>
+	<tr><td>68.37   </td><td>35      </td><td>73889.99</td><td>225.58  </td><td>0       </td><td>0       </td></tr>
+	<tr><td>59.99   </td><td>23      </td><td>59761.56</td><td>226.74  </td><td>1       </td><td>0       </td></tr>
+	<tr><td>88.91   </td><td>33      </td><td>53852.85</td><td>208.36  </td><td>0       </td><td>0       </td></tr>
+	<tr><td>66.00   </td><td>48      </td><td>24593.33</td><td>131.76  </td><td>1       </td><td>1       </td></tr>
+	<tr><td>74.53   </td><td>30      </td><td>68862.00</td><td>221.51  </td><td>1       </td><td>0       </td></tr>
+	<tr><td>69.88   </td><td>20      </td><td>55642.32</td><td>183.82  </td><td>1       </td><td>0       </td></tr>
+</tbody>
+</table>
+
+
+
+### Shuffle The Data
+
+
+```R
+# Shuffle by row indices
+rows <- sample(nrow(advertising))
+
+# Shuffle
+advertising_shuffled <- advertising[rows, ]
+
+head(advertising_shuffled,10)
+```
+
+
+<table>
+<thead><tr><th></th><th scope=col>Daily.Time.Spent.on.Site</th><th scope=col>Age</th><th scope=col>Area.Income</th><th scope=col>Daily.Internet.Usage</th><th scope=col>Male</th><th scope=col>Clicked.on.Ad</th></tr></thead>
+<tbody>
+	<tr><th scope=row>154</th><td>65.40   </td><td>33      </td><td>66699.12</td><td>247.31  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>673</th><td>89.21   </td><td>33      </td><td>44078.24</td><td>210.53  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>761</th><td>75.81   </td><td>40      </td><td>71157.05</td><td>229.19  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>441</th><td>46.04   </td><td>32      </td><td>65499.93</td><td>147.92  </td><td>0       </td><td>1       </td></tr>
+	<tr><th scope=row>603</th><td>71.83   </td><td>40      </td><td>22205.74</td><td>135.48  </td><td>1       </td><td>1       </td></tr>
+	<tr><th scope=row>107</th><td>72.23   </td><td>25      </td><td>46557.92</td><td>241.03  </td><td>1       </td><td>0       </td></tr>
+	<tr><th scope=row>791</th><td>36.98   </td><td>31      </td><td>39552.49</td><td>167.87  </td><td>1       </td><td>1       </td></tr>
+	<tr><th scope=row>819</th><td>81.98   </td><td>34      </td><td>67432.49</td><td>212.88  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>267</th><td>70.58   </td><td>26      </td><td>56694.12</td><td>136.94  </td><td>0       </td><td>1       </td></tr>
+	<tr><th scope=row>404</th><td>87.23   </td><td>29      </td><td>51015.11</td><td>202.12  </td><td>0       </td><td>0       </td></tr>
+</tbody>
+</table>
+
+
+
+### Split the Data
+
+
+```R
+#Split the data into train and test sets
+
+#Set the seed to 100
+set.seed(100)
+
+#Split the data into 75% training and 25% testing
+train_set = createDataPartition(advertising_shuffled$Clicked.on.Ad, p=0.75, list=FALSE)
+
+#Create the train dataset
+train = advertising_shuffled[train_set,]
+
+#Create the test dataset
+test = advertising_shuffled[-train_set,]
+
+head(train,5)
+head(test,5)
+```
+
+
+<table>
+<thead><tr><th></th><th scope=col>Daily.Time.Spent.on.Site</th><th scope=col>Age</th><th scope=col>Area.Income</th><th scope=col>Daily.Internet.Usage</th><th scope=col>Male</th><th scope=col>Clicked.on.Ad</th></tr></thead>
+<tbody>
+	<tr><th scope=row>154</th><td>65.40   </td><td>33      </td><td>66699.12</td><td>247.31  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>673</th><td>89.21   </td><td>33      </td><td>44078.24</td><td>210.53  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>761</th><td>75.81   </td><td>40      </td><td>71157.05</td><td>229.19  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>441</th><td>46.04   </td><td>32      </td><td>65499.93</td><td>147.92  </td><td>0       </td><td>1       </td></tr>
+	<tr><th scope=row>603</th><td>71.83   </td><td>40      </td><td>22205.74</td><td>135.48  </td><td>1       </td><td>1       </td></tr>
+</tbody>
+</table>
+
+
+
+
+<table>
+<thead><tr><th></th><th scope=col>Daily.Time.Spent.on.Site</th><th scope=col>Age</th><th scope=col>Area.Income</th><th scope=col>Daily.Internet.Usage</th><th scope=col>Male</th><th scope=col>Clicked.on.Ad</th></tr></thead>
+<tbody>
+	<tr><th scope=row>791</th><td>36.98   </td><td>31      </td><td>39552.49</td><td>167.87  </td><td>1       </td><td>1       </td></tr>
+	<tr><th scope=row>819</th><td>81.98   </td><td>34      </td><td>67432.49</td><td>212.88  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>511</th><td>57.86   </td><td>30      </td><td>18819.34</td><td>166.86  </td><td>0       </td><td>1       </td></tr>
+	<tr><th scope=row>966</th><td>35.25   </td><td>50      </td><td>47051.02</td><td>194.44  </td><td>0       </td><td>1       </td></tr>
+	<tr><th scope=row>657</th><td>85.24   </td><td>31      </td><td>61840.26</td><td>182.84  </td><td>1       </td><td>0       </td></tr>
+</tbody>
+</table>
+
+
+
+
+```R
+#Set the x and y variables
+
+x = train
+y = train$Clicked.on.Ad
+
+head(x,5)
+head(y,5)
+```
+
+
+<table>
+<thead><tr><th></th><th scope=col>Daily.Time.Spent.on.Site</th><th scope=col>Age</th><th scope=col>Area.Income</th><th scope=col>Daily.Internet.Usage</th><th scope=col>Male</th><th scope=col>Clicked.on.Ad</th></tr></thead>
+<tbody>
+	<tr><th scope=row>154</th><td>65.40   </td><td>33      </td><td>66699.12</td><td>247.31  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>673</th><td>89.21   </td><td>33      </td><td>44078.24</td><td>210.53  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>761</th><td>75.81   </td><td>40      </td><td>71157.05</td><td>229.19  </td><td>0       </td><td>0       </td></tr>
+	<tr><th scope=row>441</th><td>46.04   </td><td>32      </td><td>65499.93</td><td>147.92  </td><td>0       </td><td>1       </td></tr>
+	<tr><th scope=row>603</th><td>71.83   </td><td>40      </td><td>22205.74</td><td>135.48  </td><td>1       </td><td>1       </td></tr>
+</tbody>
+</table>
+
+
+
+
+<ol class=list-inline>
+	<li>0</li>
+	<li>0</li>
+	<li>0</li>
+	<li>1</li>
+	<li>1</li>
+</ol>
+
+<details>
+	<summary style=display:list-item;cursor:pointer>
+		<strong>Levels</strong>:
+	</summary>
+	<ol class=list-inline>
+		<li>'0'</li>
+		<li>'1'</li>
+	</ol>
+</details>
+
+
+### Train The Model
+
+### Training the model using Random Forest
+
+
+```R
+install.packages("randomForest")
+library(randomForest)
+```
+
+    Installing package into 'C:/Users/maryk/Documents/R/win-library/3.6'
+    (as 'lib' is unspecified)
+    
+
+    package 'randomForest' successfully unpacked and MD5 sums checked
+    
+    The downloaded binary packages are in
+    	C:\Users\maryk\AppData\Local\Temp\RtmpmKjhOL\downloaded_packages
+    
+
+    randomForest 4.6-14
+    Type rfNews() to see new features/changes/bug fixes.
+    
+    Attaching package: 'randomForest'
+    
+    The following object is masked from 'package:dplyr':
+    
+        combine
+    
+    The following object is masked from 'package:ggplot2':
+    
+        margin
+    
+    
+
+
+```R
+#Train the model using random forest
+
+model_rf = randomForest(Clicked.on.Ad ~ ., data = train, importance = TRUE)
+
+model_rf
+```
+
+
+    
+    Call:
+     randomForest(formula = Clicked.on.Ad ~ ., data = train, importance = TRUE) 
+                   Type of random forest: classification
+                         Number of trees: 500
+    No. of variables tried at each split: 2
+    
+            OOB estimate of  error rate: 3.07%
+    Confusion matrix:
+        0   1 class.error
+    0 368   7  0.01866667
+    1  16 359  0.04266667
+
+
+
+```R
+#Predict on train set
+pred = predict(model_rf, train, type = "class")
+
+#Check classification accuracy
+mean(pred == train$Clicked.on.Ad)
+accuracy = table(pred, train$Clicked.on.Ad)
+accuracy
+```
+
+
+1
+
+
+
+        
+    pred   0   1
+       0 375   0
+       1   0 375
+
+
+
+```R
+#Predict on test set
+pred_test <- predict(model_rf, test, type = "class")
+
+#Check classification accuracy
+mean(pred_test == test$Clicked.on.Ad)                    
+table(pred_test,test$Clicked.on.Ad)
+```
+
+
+0.972
+
+
+
+             
+    pred_test   0   1
+            0 124   6
+            1   1 119
+
+
+### Training using XGBoost
+
+
+```R
+install.packages('xgboost')
+```
+
+    Installing package into 'C:/Users/maryk/Documents/R/win-library/3.6'
+    (as 'lib' is unspecified)
+    
+
+    package 'xgboost' successfully unpacked and MD5 sums checked
+    
+    The downloaded binary packages are in
+    	C:\Users\maryk\AppData\Local\Temp\RtmpmKjhOL\downloaded_packages
+    
+
+
+```R
+library(xgboost)
+library(readxl)
+library(tidyverse)
+library(caret)
 ```
 
 
 ```R
+x_train = xgb.DMatrix(as.matrix(train %>% select(-Clicked.on.Ad)))
 
+y_train = train$Clicked.on.Ad
+
+x_test = xgb.DMatrix(as.matrix(test %>% select(-Clicked.on.Ad)))
+
+y_test = test$Clicked.on.Ad
 ```
 
 
 ```R
-
+xgb_trcontrol = trainControl(method = "cv",number = 5,  allowParallel = TRUE,verboseIter = FALSE,returnData = FALSE)
 ```
 
 
 ```R
+#Specify the same parameters
+#The hyperparameters to optimize are found in the website
 
-```
-
-
-```R
-
-```
-
-
-```R
-
+xgbGrid <- expand.grid(nrounds = c(100,200),
+                       max_depth = c(10, 15, 20, 25),
+                       colsample_bytree = seq(0.5, 0.9, length.out = 5), 
+                       eta = 0.1,
+                       gamma=0,
+                       min_child_weight = 1,
+                       subsample = 1
+                      )
 ```
 
 
